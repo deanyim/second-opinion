@@ -91,8 +91,8 @@ export function ChatInterface(): JSX.Element {
       // Add both AI responses
       setMessages(prev => [
         ...prev,
-        createMessage(claudeResponse.response, 'assistant', CHATBOT_TO_MODEL.claude, 'claude-'),
-        createMessage(chatgptResponse.response, 'assistant', CHATBOT_TO_MODEL.chatgpt, 'chatgpt-'),
+        createMessage(claudeResponse.response, 'assistant', CHATBOT_TO_MODEL.claude),
+        createMessage(chatgptResponse.response, 'assistant', CHATBOT_TO_MODEL.chatgpt),
       ]);
     } catch (error) {
       console.error('Error:', error);

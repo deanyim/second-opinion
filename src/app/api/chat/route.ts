@@ -31,14 +31,14 @@ export async function POST(request: Request) {
                 messages: [{ role: 'user', content: message }],
             });
 
-            response = completion.content[0].text;
+            response = completion.content[0]?.text ?? 'No response generated';
         } else if (model === 'chatgpt') {
             const completion = await openai.chat.completions.create({
-                model: 'gpt-4-turbo-preview',
+                model: 'gpt-3.5-turbo',
                 messages: [{ role: 'user', content: message }],
             });
 
-            response = completion.choices[0].message.content;
+            response = completion.choices[0]?.message?.content ?? 'No response generated';
         } else {
             return NextResponse.json(
                 { error: 'Invalid model specified' },
