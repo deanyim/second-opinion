@@ -2,6 +2,13 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Send } from 'lucide-react';
+import Image from 'next/image';
+
+// Add this interface near the top of the file
+interface Message {
+  text: string;
+  role: 'user' | 'assistant';
+}
 
 const SAMPLE_RESPONSE = `Thank you for your message! Let me provide a detailed response that demonstrates text formatting and length:
 
@@ -24,15 +31,15 @@ def greet(name):
 This helps simulate the actual response you'd get from Claude or ChatGPT, showing how the interface handles longer, formatted content while maintaining a smooth user experience.`;
 
 const ChatInterface = () => {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [activeTab, setActiveTab] = useState('claude');
   const [isTyping, setIsTyping] = useState(false);
-  const chatContainerRef = useRef(null);
-  const bottomRef = useRef(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   // Simulate message streaming
-  const streamResponse = async (response) => {
+  const streamResponse = async (response: string) => {
     setIsTyping(true);
     // Add AI response after a short delay
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -45,7 +52,6 @@ const ChatInterface = () => {
       const chatContainer = chatContainerRef.current;
       const isScrolledToBottom = chatContainer.scrollHeight - chatContainer.scrollTop === chatContainer.clientHeight;
 
-      // Only smooth scroll if user is already at bottom
       bottomRef.current.scrollIntoView({
         behavior: isScrolledToBottom ? 'smooth' : 'auto',
         block: 'end'
@@ -58,7 +64,7 @@ const ChatInterface = () => {
     scrollToMessage();
   }, [messages]);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
 
@@ -67,7 +73,7 @@ const ChatInterface = () => {
       document.activeElement.blur();
     }
 
-    const newMessage = { text: inputValue, role: 'user' };
+    const newMessage: Message = { text: inputValue, role: 'user' };
     setMessages(prev => [...prev, newMessage]);
     setInputValue('');
 
@@ -138,10 +144,11 @@ const ChatInterface = () => {
               : 'text-gray-500 hover:bg-gray-50'
               }`}
           >
-            <img
+            <Image
               src="/api/placeholder/24/24"
               alt="Claude"
-              className="w-6 h-6"
+              width={24}
+              height={24}
             />
             <span>Claude</span>
           </button>
@@ -152,10 +159,11 @@ const ChatInterface = () => {
               : 'text-gray-500 hover:bg-gray-50'
               }`}
           >
-            <img
+            <Image
               src="/api/placeholder/24/24"
               alt="ChatGPT"
-              className="w-6 h-6"
+              width={24}
+              height={24}
             />
             <span>ChatGPT</span>
           </button>
