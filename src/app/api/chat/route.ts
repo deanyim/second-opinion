@@ -26,12 +26,18 @@ export async function POST(request: Request) {
 
         if (chatbot === 'claude') {
             try {
+                const messages = [
+                    { role: 'user' as const, content: message }
+                ];
+
                 const completion = await anthropic.messages.create({
                     model: 'claude-3-sonnet-20240229',
                     max_tokens: 1024,
-                    messages: [{ role: 'user', content: message }],
+                    messages: messages,
                 });
-                response = completion.content?.[0]?.text ?? 'No response generated';
+                response = completion.content[0] && 'text' in completion.content[0]
+                    ? completion.content[0].text
+                    : 'No response generated';
             } catch (error: any) {
                 console.error('Claude API error:', error);
                 return NextResponse.json(
@@ -41,9 +47,14 @@ export async function POST(request: Request) {
             }
         } else if (chatbot === 'chatgpt') {
             try {
+                const messages = [
+                    { role: 'system' as const, content: 'Please format your responses using markdown.' },
+                    { role: 'user' as const, content: message }
+                ];
+
                 const completion = await openai.chat.completions.create({
                     model: 'gpt-3.5-turbo',
-                    messages: [{ role: 'user', content: message }],
+                    messages: messages,
                 });
                 response = completion.choices[0]?.message?.content ?? 'No response generated';
             } catch (error: any) {

@@ -57,9 +57,15 @@ export function ChatInterface(): JSX.Element {
       body: JSON.stringify(request),
     });
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Failed to get response');
-    return data;
+    const text = await response.text();
+    try {
+      const data = JSON.parse(text);
+      if (!response.ok) throw new Error(data.error || 'Failed to get response');
+      return data;
+    } catch (e) {
+      console.error('Failed to parse response:', text);
+      throw new Error('Invalid response from server');
+    }
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
