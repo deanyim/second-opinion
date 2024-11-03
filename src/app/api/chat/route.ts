@@ -13,7 +13,10 @@ const openai = new OpenAI({
 
 export async function POST(request: Request) {
     try {
-        const { message, chatbot } = await request.json();
+        const { message, chatbot } = await request.json() as {
+            message: string;
+            chatbot: 'claude' | 'chatgpt';
+        };
 
         if (!message) {
             return NextResponse.json(
@@ -38,12 +41,14 @@ export async function POST(request: Request) {
                 response = completion.content[0] && 'text' in completion.content[0]
                     ? completion.content[0].text
                     : 'No response generated';
-            } catch (error: any) {
-                console.error('Claude API error:', error);
-                return NextResponse.json(
-                    { error: error.message || 'Error with Claude API' },
-                    { status: error.status || 500 }
-                );
+            } catch (error: unknown) {
+                if (error instanceof Anthropic.APIError) {
+                    console.error('Claude API error:', error);
+                    return NextResponse.json(
+                        { error: error.message },
+                        { status: error.status ?? 500 }
+                    );
+                }
             }
         } else if (chatbot === 'chatgpt') {
             try {
