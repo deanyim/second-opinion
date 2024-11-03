@@ -150,10 +150,10 @@ export function ChatInterface(): JSX.Element {
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center">
               <h1 className="text-4xl text-gray-600 text-center px-4">
-                Hello there! How can we help you today?
+                Hi there! How can we help you today?
               </h1>
               <p className="mt-4 text-gray-400 text-lg">
-                Get help from Claude and ChatGPT in parallel
+                Ask ChatGPT & Claude at the same time
               </p>
             </div>
           ) : (
