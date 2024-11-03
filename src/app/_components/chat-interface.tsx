@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { FormEvent, ChangeEvent } from 'react';
 import { Send } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -24,6 +24,21 @@ export function ChatInterface(): JSX.Element {
   const [activeChatbot, setActiveChatbot] = useState<Chatbot>('claude');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  // Handle keyboard and scroll behavior
+  useEffect(() => {
+    const handleResize = () => {
+      // Scroll to bottom when keyboard appears
+      if (messagesContainerRef.current) {
+        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleTabChange = (chatbot: Chatbot): void => {
     setActiveChatbot(chatbot);
@@ -110,6 +125,15 @@ export function ChatInterface(): JSX.Element {
       setIsLoading(false);
       scrollToBottom();
     }
+
+    // Blur input to dismiss keyboard
+    inputRef.current?.blur();
+
+    // After message is sent, scroll to show the last message
+    if (messagesContainerRef.current) {
+      const lastMessage = messagesContainerRef.current.lastElementChild;
+      lastMessage?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   const visibleMessages = messages.filter(
@@ -117,8 +141,11 @@ export function ChatInterface(): JSX.Element {
   );
 
   return (
-    <div className="flex flex-col h-[100dvh]">
-      <div className="flex-1 overflow-y-auto">
+    <div className="fixed inset-0 flex flex-col">
+      <div
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto overscroll-none"
+      >
         <div className="p-4 space-y-4">
           {visibleMessages.map((message) => (
             <div
@@ -157,15 +184,15 @@ export function ChatInterface(): JSX.Element {
         </div>
       </div>
 
-      <div className="flex-shrink-0 border-t bg-white">
+      <div className="sticky bottom-0 w-full bg-white border-t">
         <div className="flex border-b">
           {(['claude', 'chatgpt'] as const).map((chatbot) => (
             <button
               key={chatbot}
               onClick={() => handleTabChange(chatbot)}
               className={`flex-1 p-4 ${activeChatbot === chatbot
-                  ? 'bg-blue-50 text-blue-500 border-b-2 border-blue-500'
-                  : 'text-gray-500 hover:bg-gray-50'
+                ? 'bg-blue-50 text-blue-500 border-b-2 border-blue-500'
+                : 'text-gray-500 hover:bg-gray-50'
                 }`}
             >
               {chatbot.charAt(0).toUpperCase() + chatbot.slice(1)}
@@ -173,24 +200,28 @@ export function ChatInterface(): JSX.Element {
           ))}
         </div>
 
-        <div className="p-4">
-          <form onSubmit={handleSubmit} className="flex space-x-2">
+        <form
+          onSubmit={handleSubmit}
+          className="p-4"
+        >
+          <div className="flex space-x-2">
             <input
+              ref={inputRef}
               type="text"
               value={input}
-              onChange={handleInputChange}
+              onChange={(e) => setInput(e.target.value)}
+              className="flex-1 p-2 border rounded-lg"
               placeholder="Type your message..."
-              className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg disabled:opacity-50"
             >
-              <Send className="w-5 h-5" />
+              Send
             </button>
-          </form>
-        </div>
+          </div>
+        </form>
       </div>
     </div>
   );
