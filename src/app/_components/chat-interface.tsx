@@ -4,11 +4,10 @@ import React, { useState, useRef, FormEvent, ChangeEvent } from 'react';
 import { Send } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { Message } from '~/types';
-import { type AIModel } from '~/models';
 
 type ChatRequest = {
   message: string;
-  model: AIModel;
+  chatbot: Chatbot;
 };
 
 type ChatAPIResponse = {
@@ -17,11 +16,6 @@ type ChatAPIResponse = {
 };
 
 type Chatbot = 'claude' | 'chatgpt';
-
-const CHATBOT_TO_MODEL: Record<Chatbot, AIModel> = {
-  claude: 'claude-3-sonnet',
-  chatgpt: 'gpt-3.5-turbo'
-} as const;
 
 export function ChatInterface(): JSX.Element {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -41,13 +35,13 @@ export function ChatInterface(): JSX.Element {
   const createMessage = (
     text: string,
     role: Message['role'],
-    model: AIModel,
+    chatbot: Chatbot,
     idPrefix: string = ''
   ): Message => ({
     id: `${idPrefix}${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     text,
     role,
-    model,
+    chatbot,
   });
 
   const scrollToBottom = (): void => {
@@ -72,7 +66,7 @@ export function ChatInterface(): JSX.Element {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
     // Add user message
-    const userMessage = createMessage(input, 'user', CHATBOT_TO_MODEL[activeChatbot]);
+    const userMessage = createMessage(input, 'user', activeChatbot);
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
@@ -80,8 +74,8 @@ export function ChatInterface(): JSX.Element {
     try {
       // Make parallel requests to both AIs
       const [claudeResponse, chatgptResponse] = await Promise.all([
-        fetchAIResponse({ message: input, model: CHATBOT_TO_MODEL.claude }),
-        fetchAIResponse({ message: input, model: CHATBOT_TO_MODEL.chatgpt }),
+        fetchAIResponse({ message: input, chatbot: 'claude' }),
+        fetchAIResponse({ message: input, chatbot: 'chatgpt' }),
       ]);
 
       if ('error' in claudeResponse || 'error' in chatgptResponse) {
@@ -91,8 +85,8 @@ export function ChatInterface(): JSX.Element {
       // Add both AI responses
       setMessages(prev => [
         ...prev,
-        createMessage(claudeResponse.response, 'assistant', CHATBOT_TO_MODEL.claude),
-        createMessage(chatgptResponse.response, 'assistant', CHATBOT_TO_MODEL.chatgpt),
+        createMessage(claudeResponse.response, 'assistant', 'claude'),
+        createMessage(chatgptResponse.response, 'assistant', 'chatgpt'),
       ]);
     } catch (error) {
       console.error('Error:', error);
@@ -101,7 +95,7 @@ export function ChatInterface(): JSX.Element {
         createMessage(
           'Sorry, there was an error processing your request.',
           'assistant',
-          CHATBOT_TO_MODEL[activeChatbot],
+          activeChatbot,
           'error-'
         ),
       ]);
@@ -112,7 +106,7 @@ export function ChatInterface(): JSX.Element {
   };
 
   const visibleMessages = messages.filter(
-    message => message.role === 'user' || message.model === CHATBOT_TO_MODEL[activeChatbot]
+    message => message.role === 'user' || message.chatbot === activeChatbot
   );
 
   return (
