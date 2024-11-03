@@ -1,187 +1,188 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, FormEvent, ChangeEvent } from 'react';
 import { Send } from 'lucide-react';
-import Image from 'next/image';
+import ReactMarkdown from 'react-markdown';
+import type { Message } from '~/types';
+import { type AIModel } from '~/models';
 
-// Add this interface near the top of the file
-interface Message {
-  text: string;
-  role: 'user' | 'assistant';
-}
+type ChatRequest = {
+  message: string;
+  model: AIModel;
+};
 
-const SAMPLE_RESPONSE = `Thank you for your message! Let me provide a detailed response that demonstrates text formatting and length:
+type ChatAPIResponse = {
+  response: string;
+  error?: string;
+};
 
-## Key Points
-1. This is a *formatted* response with markdown
-2. It includes **multiple** paragraphs
-3. And some code examples
+type Chatbot = 'claude' | 'chatgpt';
 
-Here's a simple code snippet:
-\`\`\`python
-def greet(name):
-    return f"Hello, {name}!"
-\`\`\`
+const CHATBOT_TO_MODEL: Record<Chatbot, AIModel> = {
+  claude: 'claude-3-sonnet',
+  chatgpt: 'gpt-3.5-turbo'
+} as const;
 
-### Additional Information
-- The response streams in gradually
-- It contains various formatting elements
-- And it's long enough to demonstrate scrolling
-
-This helps simulate the actual response you'd get from Claude or ChatGPT, showing how the interface handles longer, formatted content while maintaining a smooth user experience.`;
-
-const ChatInterface = () => {
+export function ChatInterface(): JSX.Element {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputValue, setInputValue] = useState('');
-  const [activeTab, setActiveTab] = useState('claude');
-  const [isTyping, setIsTyping] = useState(false);
-  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [input, setInput] = useState<string>('');
+  const [activeChatbot, setActiveChatbot] = useState<Chatbot>('claude');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Simulate message streaming
-  const streamResponse = async (response: string) => {
-    setIsTyping(true);
-    // Add AI response after a short delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setMessages(prev => [...prev, { text: response, role: 'assistant' }]);
-    setIsTyping(false);
+  const handleTabChange = (chatbot: Chatbot): void => {
+    setActiveChatbot(chatbot);
   };
 
-  const scrollToMessage = () => {
-    if (bottomRef.current && chatContainerRef.current) {
-      const chatContainer = chatContainerRef.current;
-      const isScrolledToBottom = chatContainer.scrollHeight - chatContainer.scrollTop === chatContainer.clientHeight;
-
-      bottomRef.current.scrollIntoView({
-        behavior: isScrolledToBottom ? 'smooth' : 'auto',
-        block: 'end'
-      });
-    }
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>): void => {
+    setInput(e.target.value);
   };
 
-  // Scroll when new messages are added
-  useEffect(() => {
-    scrollToMessage();
-  }, [messages]);
+  const createMessage = (
+    text: string,
+    role: Message['role'],
+    model: AIModel,
+    idPrefix: string = ''
+  ): Message => ({
+    id: `${idPrefix}${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    text,
+    role,
+    model,
+  });
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const scrollToBottom = (): void => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const fetchAIResponse = async (
+    request: ChatRequest
+  ): Promise<ChatAPIResponse> => {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to get response');
+    return data;
+  };
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
-    if (!inputValue.trim()) return;
+    if (!input.trim() || isLoading) return;
+    // Add user message
+    const userMessage = createMessage(input, 'user', CHATBOT_TO_MODEL[activeChatbot]);
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
 
-    // Blur input to dismiss mobile keyboard
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
+    try {
+      // Make parallel requests to both AIs
+      const [claudeResponse, chatgptResponse] = await Promise.all([
+        fetchAIResponse({ message: input, model: CHATBOT_TO_MODEL.claude }),
+        fetchAIResponse({ message: input, model: CHATBOT_TO_MODEL.chatgpt }),
+      ]);
+
+      if ('error' in claudeResponse || 'error' in chatgptResponse) {
+        throw new Error('One or both AI responses contained an error');
+      }
+
+      // Add both AI responses
+      setMessages(prev => [
+        ...prev,
+        createMessage(claudeResponse.response, 'assistant', CHATBOT_TO_MODEL.claude, 'claude-'),
+        createMessage(chatgptResponse.response, 'assistant', CHATBOT_TO_MODEL.chatgpt, 'chatgpt-'),
+      ]);
+    } catch (error) {
+      console.error('Error:', error);
+      setMessages(prev => [
+        ...prev,
+        createMessage(
+          'Sorry, there was an error processing your request.',
+          'assistant',
+          CHATBOT_TO_MODEL[activeChatbot],
+          'error-'
+        ),
+      ]);
+    } finally {
+      setIsLoading(false);
+      scrollToBottom();
     }
-
-    const newMessage: Message = { text: inputValue, role: 'user' };
-    setMessages(prev => [...prev, newMessage]);
-    setInputValue('');
-
-    // Simulate AI response
-    await streamResponse(SAMPLE_RESPONSE);
   };
+
+  const visibleMessages = messages.filter(
+    message => message.role === 'user' || message.model === CHATBOT_TO_MODEL[activeChatbot]
+  );
 
   return (
-    <div className="flex flex-col h-screen w-full max-w-4xl mx-auto bg-white">
-      {/* Main chat area with scrolling */}
-      <div
-        ref={chatContainerRef}
-        className="flex-1 overflow-y-auto"
-      >
-        {messages.length === 0 ? (
-          <div className="h-full flex items-center justify-center p-4">
-            <h1 className="text-2xl text-gray-600 text-center font-light">
-              Hello there! How can we help you today?
-            </h1>
+    <div className="flex h-screen flex-col">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {visibleMessages.map((message) => (
+          <div
+            key={message.id}
+            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'
+              }`}
+          >
+            <div
+              className={`max-w-[80%] rounded-lg p-4 ${message.role === 'user'
+                ? 'bg-blue-500 text-white'
+                : 'bg-gray-100 text-black'
+                }`}
+            >
+              {message.role === 'assistant' ? (
+                <div className="prose prose-sm max-w-none dark:prose-invert">
+                  <ReactMarkdown>{message.text}</ReactMarkdown>
+                </div>
+              ) : (
+                message.text
+              )}
+            </div>
           </div>
-        ) : (
-          <div className="p-4 space-y-6">
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[80%] p-3 rounded-lg ${message.role === 'user'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-800'
-                    }`}
-                >
-                  {message.role === 'assistant' ? (
-                    <div className="prose prose-sm max-w-none">
-                      {message.text}
-                    </div>
-                  ) : (
-                    message.text
-                  )}
-                </div>
+        ))}
+        {isLoading && (
+          <div className="flex justify-start">
+            <div className="bg-gray-100 rounded-lg p-4">
+              <div className="flex space-x-2">
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
               </div>
-            ))}
-            {isTyping && (
-              <div className="flex justify-start">
-                <div className="max-w-[80%] p-3 rounded-lg bg-gray-100">
-                  <div className="flex space-x-2">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
-                  </div>
-                </div>
-              </div>
-            )}
-            <div ref={bottomRef} />
+            </div>
           </div>
         )}
+        <div ref={bottomRef} />
       </div>
 
-      {/* Fixed bottom section */}
       <div className="border-t">
-        {/* Tabs */}
         <div className="flex border-b">
-          <button
-            onClick={() => setActiveTab('claude')}
-            className={`flex-1 p-4 flex items-center justify-center space-x-2 font-['Söhne'] ${activeTab === 'claude'
-              ? 'bg-blue-50 text-blue-500 border-b-2 border-blue-500'
-              : 'text-gray-500 hover:bg-gray-50'
-              }`}
-          >
-            <Image
-              src="/api/placeholder/24/24"
-              alt="Claude"
-              width={24}
-              height={24}
-            />
-            <span>Claude</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('chatgpt')}
-            className={`flex-1 p-4 flex items-center justify-center space-x-2 font-['Söhne'] ${activeTab === 'chatgpt'
-              ? 'bg-blue-50 text-blue-500 border-b-2 border-blue-500'
-              : 'text-gray-500 hover:bg-gray-50'
-              }`}
-          >
-            <Image
-              src="/api/placeholder/24/24"
-              alt="ChatGPT"
-              width={24}
-              height={24}
-            />
-            <span>ChatGPT</span>
-          </button>
+          {(['claude', 'chatgpt'] as const).map((chatbot) => (
+            <button
+              key={chatbot}
+              onClick={() => handleTabChange(chatbot)}
+              className={`flex-1 p-4 ${activeChatbot === chatbot
+                ? 'bg-blue-50 text-blue-500 border-b-2 border-blue-500'
+                : 'text-gray-500 hover:bg-gray-50'
+                }`}
+            >
+              {chatbot.charAt(0).toUpperCase() + chatbot.slice(1)}
+            </button>
+          ))}
         </div>
 
-        {/* Input area */}
-        <div className="p-4 bg-white">
+        <div className="p-4">
           <form onSubmit={handleSubmit} className="flex space-x-2">
             <input
               type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
+              value={input}
+              onChange={handleInputChange}
               placeholder="Type your message..."
               className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button
               type="submit"
-              className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              disabled={isLoading || !input.trim()}
+              className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
             >
               <Send className="w-5 h-5" />
             </button>
@@ -190,6 +191,4 @@ const ChatInterface = () => {
       </div>
     </div>
   );
-};
-
-export default ChatInterface;
+}
