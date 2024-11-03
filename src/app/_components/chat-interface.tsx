@@ -146,42 +146,50 @@ export function ChatInterface(): JSX.Element {
         ref={messagesContainerRef}
         className="flex-1 overflow-y-auto overscroll-none"
       >
-        <div className="p-4 space-y-4">
-          {visibleMessages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
-            >
+        {messages.length === 0 ? (
+          <div className="h-full flex items-center justify-center">
+            <h1 className="text-4xl text-gray-600 text-center px-4">
+              Hello there! How can we help you today?
+            </h1>
+          </div>
+        ) : (
+          <div className="p-4 space-y-4">
+            {visibleMessages.map((message) => (
               <div
-                className={`max-w-[80%] rounded-lg p-4 ${message.role === 'user'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-black'
+                key={message.id}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'
                   }`}
               >
-                {message.role === 'assistant' ? (
-                  <div className="prose prose-sm max-w-none dark:prose-invert">
-                    <ReactMarkdown>{message.text}</ReactMarkdown>
-                  </div>
-                ) : (
-                  message.text
-                )}
-              </div>
-            </div>
-          ))}
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-gray-100 rounded-lg p-4">
-                <div className="flex space-x-2">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+                <div
+                  className={`max-w-[80%] rounded-lg p-4 ${message.role === 'user'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 text-black'
+                    }`}
+                >
+                  {message.role === 'assistant' ? (
+                    <div className="prose prose-sm max-w-none dark:prose-invert">
+                      <ReactMarkdown>{message.text}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    message.text
+                  )}
                 </div>
               </div>
-            </div>
-          )}
-          <div ref={bottomRef} />
-        </div>
+            ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-gray-100 rounded-lg p-4">
+                  <div className="flex space-x-2">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
+        )}
       </div>
 
       <div className="sticky bottom-0 w-full bg-white border-t">
