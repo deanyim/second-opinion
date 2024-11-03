@@ -117,53 +117,55 @@ export function ChatInterface(): JSX.Element {
   );
 
   return (
-    <div className="flex h-screen flex-col">
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {visibleMessages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'
-              }`}
-          >
+    <div className="flex flex-col h-[100dvh]">
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-4 space-y-4">
+          {visibleMessages.map((message) => (
             <div
-              className={`max-w-[80%] rounded-lg p-4 ${message.role === 'user'
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-100 text-black'
+              key={message.id}
+              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'
                 }`}
             >
-              {message.role === 'assistant' ? (
-                <div className="prose prose-sm max-w-none dark:prose-invert">
-                  <ReactMarkdown>{message.text}</ReactMarkdown>
-                </div>
-              ) : (
-                message.text
-              )}
-            </div>
-          </div>
-        ))}
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-gray-100 rounded-lg p-4">
-              <div className="flex space-x-2">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+              <div
+                className={`max-w-[80%] rounded-lg p-4 ${message.role === 'user'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-100 text-black'
+                  }`}
+              >
+                {message.role === 'assistant' ? (
+                  <div className="prose prose-sm max-w-none dark:prose-invert">
+                    <ReactMarkdown>{message.text}</ReactMarkdown>
+                  </div>
+                ) : (
+                  message.text
+                )}
               </div>
             </div>
-          </div>
-        )}
-        <div ref={bottomRef} />
+          ))}
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="bg-gray-100 rounded-lg p-4">
+                <div className="flex space-x-2">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={bottomRef} />
+        </div>
       </div>
 
-      <div className="border-t">
+      <div className="flex-shrink-0 border-t bg-white">
         <div className="flex border-b">
           {(['claude', 'chatgpt'] as const).map((chatbot) => (
             <button
               key={chatbot}
               onClick={() => handleTabChange(chatbot)}
               className={`flex-1 p-4 ${activeChatbot === chatbot
-                ? 'bg-blue-50 text-blue-500 border-b-2 border-blue-500'
-                : 'text-gray-500 hover:bg-gray-50'
+                  ? 'bg-blue-50 text-blue-500 border-b-2 border-blue-500'
+                  : 'text-gray-500 hover:bg-gray-50'
                 }`}
             >
               {chatbot.charAt(0).toUpperCase() + chatbot.slice(1)}
