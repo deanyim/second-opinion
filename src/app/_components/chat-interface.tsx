@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useRef, FormEvent, ChangeEvent } from 'react';
+import React, { useState, useRef } from 'react';
+import type { FormEvent, ChangeEvent } from 'react';
 import { Send } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { Message } from '~/types';
@@ -34,9 +35,9 @@ export function ChatInterface(): JSX.Element {
 
   const createMessage = (
     text: string,
-    role: Message['role'],
+    role: 'user' | 'assistant',
     chatbot: Chatbot,
-    idPrefix: string = ''
+    idPrefix = ''
   ): Message => ({
     id: `${idPrefix}${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     text,
@@ -59,11 +60,11 @@ export function ChatInterface(): JSX.Element {
 
     const text = await response.text();
     try {
-      const data = JSON.parse(text);
-      if (!response.ok) throw new Error(data.error || 'Failed to get response');
+      const data = JSON.parse(text) as ChatAPIResponse;
+      if (!response.ok) throw new Error(data.error ?? 'Failed to get response');
       return data;
     } catch (e) {
-      console.error('Failed to parse response:', text);
+      console.error('Failed to parse response:', text, e);
       throw new Error('Invalid response from server');
     }
   };
