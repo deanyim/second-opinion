@@ -62,12 +62,14 @@ export async function POST(request: Request) {
                     messages: messages,
                 });
                 response = completion.choices[0]?.message?.content ?? 'No response generated';
-            } catch (error: any) {
-                console.error('ChatGPT API error:', error);
-                return NextResponse.json(
-                    { error: error.message || 'Error with ChatGPT API' },
-                    { status: error.status || 500 }
-                );
+            } catch (error: unknown) {
+                if (error instanceof OpenAI.APIError) {
+                    console.error('ChatGPT API error:', error);
+                    return NextResponse.json(
+                        { error: error.message },
+                        { status: error.status }
+                    );
+                }
             }
         } else {
             return NextResponse.json(
