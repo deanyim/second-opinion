@@ -1,6 +1,10 @@
 import ReactMarkdown from 'react-markdown';
 
-function ChatMessage({ message }) {
+interface Message {
+    content: string;
+}
+
+export function ChatMessage({ message }: { message: Message }) {
     return (
         <div className="message">
             <ReactMarkdown>
