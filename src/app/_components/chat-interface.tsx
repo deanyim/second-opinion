@@ -148,10 +148,13 @@ export function ChatInterface(): JSX.Element {
           className="flex-1 overflow-y-auto overscroll-none"
         >
           {messages.length === 0 ? (
-            <div className="h-full flex items-center justify-center">
+            <div className="h-full flex flex-col items-center justify-center">
               <h1 className="text-4xl text-gray-600 text-center px-4">
                 Hello there! How can we help you today?
               </h1>
+              <p className="mt-4 text-gray-400 text-lg">
+                Get help from Claude and ChatGPT in parallel
+              </p>
             </div>
           ) : (
             <div className="p-4 space-y-4">
