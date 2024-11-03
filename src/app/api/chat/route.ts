@@ -34,7 +34,10 @@ export async function POST(request: Request) {
                 ];
 
                 const completion = await anthropic.messages.create({
-                    model: 'claude-3-sonnet-20240229',
+                    // save money & time while testing
+                    // TODO addd a check for whether dev or prod
+                    model: 'claude-3-haiku-20240307',
+                    // model: 'claude-3-5-sonnet-latest',
                     max_tokens: 1024,
                     messages: messages,
                 });
@@ -58,7 +61,9 @@ export async function POST(request: Request) {
                 ];
 
                 const completion = await openai.chat.completions.create({
-                    model: 'gpt-3.5-turbo',
+                    // save money & time while testing
+                    // TODO addd a check for whether dev or prod
+                    model: 'gpt-4o-mini',
                     messages: messages,
                 });
                 response = completion.choices[0]?.message?.content ?? 'No response generated';
