@@ -141,100 +141,98 @@ export function ChatInterface(): JSX.Element {
   );
 
   return (
-    <div className="fixed inset-0 flex justify-center bg-white/60 bg-[url('/bg-triple.png')] bg-repeat bg-[size:425px_371px]">
-      <div className="w-full flex justify-center bg-white/80">
-        <div className="w-full max-w-[720px] flex flex-col bg-white/80">
-          <div
-            ref={messagesContainerRef}
-            className="flex-1 overflow-y-auto overscroll-none"
-          >
-            {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center">
-                <h1 className="text-4xl text-gray-600 text-center px-4">
-                  Hi there! How can we help you today?
-                </h1>
-                <p className="mt-4 text-gray-400 text-lg">
-                  Ask ChatGPT & Claude at the same time
-                </p>
-              </div>
-            ) : (
-              <div className="p-4 space-y-4">
-                {visibleMessages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start w-full'}`}
-                  >
-                    <div
-                      className={`${message.role === 'user'
-                        ? 'bg-blue-500 text-white max-w-[80%]'
-                        : 'bg-gray-100 text-black w-full'
-                        } rounded-lg p-4`}
-                    >
-                      {message.role === 'assistant' ? (
-                        <div className="prose prose-slate prose-pre:bg-slate-800 prose-pre:text-slate-50 max-w-none">
-                          <ReactMarkdown>{message.text}</ReactMarkdown>
-                        </div>
-                      ) : (
-                        message.text
-                      )}
-                    </div>
-                  </div>
-                ))}
-                {isLoading && (
-                  <div className="flex justify-start">
-                    <div className="bg-gray-100 rounded-lg p-4">
-                      <div className="flex space-x-2">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <div ref={bottomRef} />
-              </div>
-            )}
-          </div>
-
-          <div className="sticky bottom-0 w-full bg-white border-t">
-            <div className="flex border-b">
-              {(['claude', 'chatgpt'] as const).map((chatbot) => (
-                <button
-                  key={chatbot}
-                  onClick={() => handleTabChange(chatbot)}
-                  className={`flex-1 p-4 ${activeChatbot === chatbot
-                    ? 'bg-blue-50 text-blue-500 border-b-2 border-blue-500'
-                    : 'text-gray-500 hover:bg-gray-50'
-                    }`}
-                >
-                  {chatbot.charAt(0).toUpperCase() + chatbot.slice(1)}
-                </button>
-              ))}
+    <div className="fixed inset-0 flex justify-center">
+      <div className="w-full max-w-[720px] flex flex-col">
+        <div
+          ref={messagesContainerRef}
+          className="flex-1 overflow-y-auto overscroll-none"
+        >
+          {messages.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center">
+              <h1 className="text-4xl text-gray-600 text-center px-4">
+                Hi there! How can we help you today?
+              </h1>
+              <p className="mt-4 text-gray-400 text-lg">
+                Ask ChatGPT & Claude at the same time
+              </p>
             </div>
-
-            <form
-              onSubmit={handleSubmit}
-              className="p-4"
-            >
-              <div className="flex space-x-2">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  className="flex-1 p-2 border rounded-lg"
-                  placeholder="Type your message..."
-                />
-                <button
-                  type="submit"
-                  disabled={isLoading || !input.trim()}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg disabled:opacity-50"
+          ) : (
+            <div className="p-4 space-y-4">
+              {visibleMessages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start w-full'}`}
                 >
-                  Send
-                </button>
-              </div>
-            </form>
+                  <div
+                    className={`${message.role === 'user'
+                      ? 'bg-blue-500 text-white max-w-[80%]'
+                      : 'bg-gray-100 text-black w-full'
+                      } rounded-lg p-4`}
+                  >
+                    {message.role === 'assistant' ? (
+                      <div className="prose prose-slate prose-pre:bg-slate-800 prose-pre:text-slate-50 max-w-none">
+                        <ReactMarkdown>{message.text}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      message.text
+                    )}
+                  </div>
+                </div>
+              ))}
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-100 rounded-lg p-4">
+                    <div className="flex space-x-2">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={bottomRef} />
+            </div>
+          )}
+        </div>
+
+        <div className="sticky bottom-0 w-full bg-white border-t">
+          <div className="flex border-b">
+            {(['claude', 'chatgpt'] as const).map((chatbot) => (
+              <button
+                key={chatbot}
+                onClick={() => handleTabChange(chatbot)}
+                className={`flex-1 p-4 ${activeChatbot === chatbot
+                  ? 'bg-blue-50 text-blue-500 border-b-2 border-blue-500'
+                  : 'text-gray-500 hover:bg-gray-50'
+                  }`}
+              >
+                {chatbot.charAt(0).toUpperCase() + chatbot.slice(1)}
+              </button>
+            ))}
           </div>
+
+          <form
+            onSubmit={handleSubmit}
+            className="p-4"
+          >
+            <div className="flex space-x-2">
+              <input
+                ref={inputRef}
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                className="flex-1 p-2 border rounded-lg"
+                placeholder="Type your message..."
+              />
+              <button
+                type="submit"
+                disabled={isLoading || !input.trim()}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg disabled:opacity-50"
+              >
+                Send
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
