@@ -5,6 +5,7 @@ import type { FormEvent, ChangeEvent } from 'react';
 import { Send } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { Message } from '~/types';
+import { MessageBubble } from './message-bubble';
 
 type ChatRequest = {
   message: string;
@@ -87,14 +88,33 @@ export function ChatInterface(): JSX.Element {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
+
     // Add user message
     const userMessage = createMessage(input, 'user', activeChatbot);
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
+    // Calculate scroll position and scroll immediately
+    setTimeout(() => {
+      const panels = document.querySelectorAll('.message-panel');
+      panels.forEach(panel => {
+        const messages = Array.from(panel.querySelectorAll('.message-bubble'));
+        const scrollOffset = messages.slice(0, -1).reduce((total, msg, index) => {
+          const height = msg.getBoundingClientRect().height;
+          const spacing = index > 0 ? 16 : 0; // 16px is the space-y-4 value
+          return total + height + spacing;
+        }, 0);
+        console.log('scrollOffset', scrollOffset);
+
+        panel.scrollTo({
+          top: scrollOffset,
+          behavior: 'smooth'
+        });
+      });
+    }, 0);
+
     try {
-      // Make parallel requests to both AIs
       const [claudeResponse, chatgptResponse] = await Promise.all([
         fetchAIResponse({ message: input, chatbot: 'claude' }),
         fetchAIResponse({ message: input, chatbot: 'chatgpt' }),
@@ -104,7 +124,7 @@ export function ChatInterface(): JSX.Element {
         throw new Error('One or both AI responses contained an error');
       }
 
-      // Add both AI responses
+      // Add both AI responses without scrolling
       setMessages(prev => [
         ...prev,
         createMessage(claudeResponse.response, 'assistant', 'claude'),
@@ -123,26 +143,13 @@ export function ChatInterface(): JSX.Element {
       ]);
     } finally {
       setIsLoading(false);
-      scrollToBottom();
-    }
-
-    // Blur input to dismiss keyboard
-    inputRef.current?.blur();
-
-    // After message is sent, scroll to show the last message
-    if (messagesContainerRef.current) {
-      const lastMessage = messagesContainerRef.current.lastElementChild;
-      lastMessage?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      inputRef.current?.blur();
     }
   };
 
-  const visibleMessages = messages.filter(
-    message => message.role === 'user' || message.chatbot === activeChatbot
-  );
-
   return (
     <div className="fixed inset-0 flex justify-center">
-      <div className="w-full max-w-[720px] flex flex-col">
+      <div className="w-full max-w-[1440px] flex flex-col">
         <div
           ref={messagesContainerRef}
           className="flex-1 overflow-y-auto overscroll-none"
@@ -156,47 +163,83 @@ export function ChatInterface(): JSX.Element {
                 Ask ChatGPT & Claude at the same time
               </p>
             </div>
+
           ) : (
-            <div className="p-4 space-y-4">
-              {visibleMessages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start w-full'}`}
-                >
-                  <div
-                    className={`${message.role === 'user'
-                      ? 'bg-blue-500 text-white max-w-[80%]'
-                      : 'bg-gray-100 text-black w-full'
-                      } rounded-lg p-4`}
-                  >
-                    {message.role === 'assistant' ? (
-                      <div className="prose prose-slate prose-pre:bg-slate-800 prose-pre:text-slate-50 max-w-none">
-                        <ReactMarkdown>{message.text}</ReactMarkdown>
+            <div className="flex flex-col md:flex-row md:space-x-4 h-full">
+              {/* Claude Panel */}
+              <div className={`w-full md:w-1/2 md:border-r ${activeChatbot !== 'claude' ? 'hidden md:block' : ''
+                }`}>
+                <div className="md:sticky md:top-0 bg-white p-3 border-b">
+                  <h2 className="font-semibold text-lg">Claude</h2>
+                </div>
+                <div className="p-4 space-y-4 md:h-[calc(100vh-180px)] md:overflow-y-auto message-panel">
+                  {messages
+                    .filter(m => m.role === 'user' || m.chatbot === 'claude')
+                    .map((message) => (
+                      <div
+                        key={message.id}
+                        className="message-bubble"
+                        data-role={message.role}
+                      >
+                        <MessageBubble message={message} />
                       </div>
-                    ) : (
-                      message.text
-                    )}
-                  </div>
-                </div>
-              ))}
-              {isLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-gray-100 rounded-lg p-4">
-                    <div className="flex space-x-2">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+                    ))}
+                  {isLoading && (
+                    <div className="flex justify-start">
+                      <div className="bg-gray-100 rounded-lg p-4">
+                        <div className="flex space-x-2">
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
+                  <div className={`h-[80vh] ${messages.length > 0 ? 'mt-4' : ''}`} />
                 </div>
-              )}
-              <div ref={bottomRef} />
+              </div>
+
+              {/* ChatGPT Panel */}
+              <div className={`w-full md:w-1/2 ${activeChatbot !== 'chatgpt' ? 'hidden md:block' : ''
+                }`}>
+                <div className="md:sticky md:top-0 bg-white p-3 border-b">
+                  <h2 className="font-semibold text-lg">ChatGPT</h2>
+                </div>
+                <div className="p-4 space-y-4 md:h-[calc(100vh-180px)] md:overflow-y-auto message-panel">
+                  {messages
+                    .filter(m => m.role === 'user' || m.chatbot === 'chatgpt')
+                    .map((message) => (
+                      <div
+                        key={message.id}
+                        className="message-bubble"
+                        data-role={message.role}
+                      >
+                        <MessageBubble message={message} />
+                      </div>
+                    ))}
+                  {isLoading && (
+                    <div className="flex justify-start">
+                      <div className="bg-gray-100 rounded-lg p-4">
+                        <div className="flex space-x-2">
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div className={`h-[80vh] ${messages.length > 0 ? 'mt-4' : ''}`} />
+                </div>
+              </div>
             </div>
           )}
+          <div ref={bottomRef} />
         </div>
 
+        {/* Input container - visible on all screens */}
         <div className="sticky bottom-0 w-full bg-white border-t">
-          <div className="flex border-b">
+          {/* Tabs - only visible on mobile */}
+          <div className="flex border-b md:hidden">
             {(['claude', 'chatgpt'] as const).map((chatbot) => (
               <button
                 key={chatbot}
@@ -211,6 +254,7 @@ export function ChatInterface(): JSX.Element {
             ))}
           </div>
 
+          {/* Input form - visible on all screens */}
           <form
             onSubmit={handleSubmit}
             className="p-4"
@@ -220,16 +264,17 @@ export function ChatInterface(): JSX.Element {
                 ref={inputRef}
                 type="text"
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={handleInputChange}
                 className="flex-1 p-2 border rounded-lg"
                 placeholder="Type your message..."
+                autoFocus
               />
               <button
                 type="submit"
                 disabled={isLoading || !input.trim()}
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg disabled:opacity-50"
               >
-                Send
+                <Send className="h-5 w-5" />
               </button>
             </div>
           </form>
