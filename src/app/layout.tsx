@@ -6,10 +6,10 @@ import { type Metadata } from "next";
 import { TRPCReactProvider } from "~/trpc/react";
 
 export const metadata: Metadata = {
-  title: "Second Opinion - AI Assistance, Doubled",
+  title: "Second Opinion - AI Assistant x 2",
   description: "Ask ChatGPT & Claude at the same time",
   openGraph: {
-    title: "Second Opinion - AI Assistance, Doubled",
+    title: "Second Opinion - AI Assistant x 2",
     description: "Ask ChatGPT & Claude at the same time",
     images: [{
       url: "/og-image.png",
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Second Opinion - AI Assistance, Doubled",
+    title: "Second Opinion - AI Assistant x 2",
     description: "Ask ChatGPT & Claude at the same time",
     images: ["/og-image.png"],
   },
